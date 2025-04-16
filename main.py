@@ -62,7 +62,7 @@ def summary_text(user_id):
 # Конфигурация webhook
 async def set_webhook(application: ApplicationBuilder):
     webhook_url = os.getenv("WEBHOOK_URL")
-    await application.bot.set_webhook(https://my-telegram-bot.onrender.com/7910071726:AAFgHCgGpGA2j1mNZdL5N8xm9jhd4VC2gMU)
+    await application.bot.set_webhook("https://my-telegram-bot.onrender.com/7910071726:AAFgHCgGpGA2j1mNZdL5N8xm9jhd4VC2gMU")
 
 # Обработчик для подтверждения и исправлений
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
