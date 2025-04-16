@@ -135,7 +135,7 @@ def webhook():
     return 'OK', 200
 
 # Главный запуск
-if __name__ == "__main__":
+async def main():
     # Инициализация приложения
     app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
 
@@ -163,3 +163,8 @@ if __name__ == "__main__":
 
     app.add_handler(conv_handler)
     app.run(host="0.0.0.0", port=5000)  # Flask сервер для получения webhook
+
+# Вызов функции main
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())  # Запуск асинхронной функции main
