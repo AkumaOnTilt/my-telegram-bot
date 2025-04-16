@@ -197,7 +197,7 @@ async def handle_correction_input(update: Update, context: ContextTypes.DEFAULT_
 if __name__ == "__main__":
     import dotenv
     dotenv.load_dotenv()
-    app = ApplicationBuilder().token(os.getenv("7910071726:AAFgHCgGpGA2j1mNZdL5N8xm9jhd4VC2gMU")).build()
+    app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
