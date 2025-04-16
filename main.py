@@ -39,7 +39,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Здравствуйте! С Вами на связи бот-помощник Языкового центра Smart+\n"
             "Smart+ это:\n"
             "- Оксфордская программа, лицензия министерства образования;\n"
-            "- Рождественской фестиваль, Театральный фестиваль на сцене университета для всех родителей;\n"
+            "- Рождественский фестиваль, Театральный фестиваль на сцене университета для всех родителей;\n"
             "- Государственный сертификат о получении уровня владения языком, торжественное вручение на сцене университета;\n"
             "- Встречи с иностранцами в разговорных клубах каждый месяц;\n"
             "- Свой выездной полилингвальный приключенческий лагерь Гринхил на всех каникулах"
@@ -123,6 +123,12 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     await query.edit_message_text(text="Вы подтвердили ваш выбор!")
 
+# Обработчик для выбора исправлений
+async def handle_correction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text="Вы выбрали исправление!")
+
 # Обработчики для разных частей формы
 # (оставляем без изменений)
 
@@ -137,10 +143,10 @@ def webhook():
 # Главный запуск
 async def main():
     # Инициализация приложения
-    app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
+    application = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
 
     # Устанавливаем webhook
-    await set_webhook(app)  # Добавляем await
+    await set_webhook(application)  # Добавляем await
 
     # Конфигурация ConversationHandler
     conv_handler = ConversationHandler(
@@ -161,8 +167,8 @@ async def main():
         fallbacks=[]
     )
 
-    app.add_handler(conv_handler)
-    app.run(host="0.0.0.0", port=5000)  # Flask сервер для получения webhook
+    application.add_handler(conv_handler)
+    await application.run_polling()  # Запуск бота
 
 # Вызов функции main
 if __name__ == "__main__":
