@@ -114,8 +114,14 @@ async def set_webhook(application: ApplicationBuilder):
 
 # Обработчик для подтверждения и исправлений
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Та же логика для обработки подтверждения
+    # Тут должна быть логика для обработки подтверждения
     pass
+
+# Определим функцию confirm, которая использовалась в CallbackQueryHandler
+async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text="Вы подтвердили ваш выбор!")
 
 # Обработчики для разных частей формы
 # (оставляем без изменений)
@@ -134,7 +140,7 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
 
     # Устанавливаем webhook
-    set_webhook(app)
+    await set_webhook(app)  # Добавляем await
 
     # Конфигурация ConversationHandler
     conv_handler = ConversationHandler(
@@ -147,7 +153,7 @@ if __name__ == "__main__":
             ASK_SHIFT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_english_level)],
             ASK_ENGLISH_LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
             ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_branch)],
-            ASK_BRANCH: [CallbackQueryHandler(confirm)],
+            ASK_BRANCH: [CallbackQueryHandler(confirm)],  # Убедитесь, что confirm теперь определен
             CONFIRMATION: [CallbackQueryHandler(handle_confirmation)],
             CORRECTION_SELECT: [CallbackQueryHandler(handle_correction_choice)],
             CORRECTION_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_correction_input)],
