@@ -1,15 +1,11 @@
-import os
 from flask import Flask, request
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, ContextTypes,
+    Application, CommandHandler, ContextTypes,
     ConversationHandler, MessageHandler, CallbackQueryHandler,
     filters
 )
-import dotenv
-
-# Загружаем переменные окружения
-dotenv.load_dotenv()
+import os
 
 # Состояния
 (
@@ -18,17 +14,14 @@ dotenv.load_dotenv()
     CONFIRMATION, CORRECTION_SELECT, CORRECTION_INPUT
 ) = range(11)
 
-# Админ ID
 ADMIN_ID = 1611776955
-
-# Память
 user_data = {}
 greeted_users = set()
 
-# Flask приложение
 app = Flask(__name__)
 
-# Старт
+# --- ОБРАБОТЧИКИ ---
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id] = {}
@@ -39,7 +32,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Здравствуйте! С Вами на связи бот-помощник Языкового центра Smart+\n"
             "Smart+ это:\n"
             "- Оксфордская программа, лицензия министерства образования;\n"
-            "- Рождественский фестиваль, Театральный фестиваль на сцене университета для всех родителей;\n"
+            "- Рождественской фестиваль, Театральный фестиваль на сцене университета для всех родителей;\n"
             "- Государственный сертификат о получении уровня владения языком, торжественное вручение на сцене университета;\n"
             "- Встречи с иностранцами в разговорных клубах каждый месяц;\n"
             "- Свой выездной полилингвальный приключенческий лагерь Гринхил на всех каникулах"
@@ -48,7 +41,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Как к Вам можно обращаться?")
     return ASK_PARENT_NAME
 
-# Все другие асинхронные функции, такие как ask_child_name, ask_child_age и т.д. остаются без изменений
 async def ask_child_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data[update.effective_user.id]["parent_name"] = update.message.text
     await update.message.reply_text("Укажите имя и фамилию ребенка.")
@@ -93,7 +85,68 @@ async def ask_branch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ASK_BRANCH
 
-# Вспомогательная функция для создания summary
+# --- ОБРАБОТКА ВЫБОРА ФИЛИАЛА ---
+
+async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    user_data[user_id]["branch"] = query.data
+
+    await query.message.reply_text("Спасибо за информацию, давайте сверим все введенные Вами данные для исключения возможных опечаток.")
+    await query.message.reply_text(summary_text(user_id))
+
+    keyboard = [
+        [InlineKeyboardButton("Да, все верно!", callback_data="confirm")],
+        [InlineKeyboardButton("Нет, есть ошибка", callback_data="error")]
+    ]
+    await query.message.reply_text("Все верно?", reply_markup=InlineKeyboardMarkup(keyboard))
+    return CONFIRMATION
+
+async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    if query.data == "confirm":
+        await context.bot.send_message(ADMIN_ID, f"Новая заявка:\n{summary_text(user_id)}")
+        await query.message.reply_text("Спасибо! Мы свяжемся с Вами в ближайшее время.")
+        return ConversationHandler.END
+    elif query.data == "error":
+        keyboard = [
+            [InlineKeyboardButton("Имя родителя", callback_data="parent_name")],
+            [InlineKeyboardButton("Имя ребенка", callback_data="child_name")],
+            [InlineKeyboardButton("Возраст", callback_data="child_age")],
+            [InlineKeyboardButton("Класс", callback_data="child_class")],
+            [InlineKeyboardButton("Смена", callback_data="shift")],
+            [InlineKeyboardButton("Английский", callback_data="english_level")],
+            [InlineKeyboardButton("Телефон", callback_data="phone")],
+            [InlineKeyboardButton("Филиал", callback_data="branch")],
+        ]
+        await query.message.reply_text("Что Вы хотите изменить?", reply_markup=InlineKeyboardMarkup(keyboard))
+        return CORRECTION_SELECT
+
+async def handle_correction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    context.user_data["field_to_correct"] = query.data
+    await query.message.reply_text("Введите новое значение:")
+    return CORRECTION_INPUT
+
+async def handle_correction_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    field = context.user_data.get("field_to_correct")
+    if field:
+        user_data[user_id][field] = update.message.text
+    await update.message.reply_text("Исправлено. Вот обновленная информация:")
+    await update.message.reply_text(summary_text(user_id))
+    keyboard = [
+        [InlineKeyboardButton("Да, все верно!", callback_data="confirm")],
+        [InlineKeyboardButton("Нет, есть ошибка", callback_data="error")]
+    ]
+    await update.message.reply_text("Все верно?", reply_markup=InlineKeyboardMarkup(keyboard))
+    return CONFIRMATION
+
+# --- СУММАРНЫЙ ТЕКСТ ---
 def summary_text(user_id):
     d = user_data[user_id]
     return (
@@ -103,52 +156,31 @@ def summary_text(user_id):
         f"Имя и фамилия ребенка: {d.get('child_name')}\n"
         f"Возраст ребенка: {d.get('child_age')}\n"
         f"Класс ребенка: {d.get('child_class')}\n"
-        f"Смена ребенка: {d.get('shift')}"
+        f"Смена ребенка: {d.get('shift')}\n"
+        f"Английский: {d.get('english_level')}"
     )
 
-# Конфигурация webhook
-async def set_webhook(application: ApplicationBuilder):
-    webhook_url = f"https://my-telegram-bot.onrender.com/{os.getenv('BOT_TOKEN')}"
-    await application.bot.set_webhook(webhook_url)
-    print("Webhook установлен")
-
-# Обработчик для подтверждения и исправлений
-async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Тут должна быть логика для обработки подтверждения
-    pass
-
-# Определим функцию confirm, которая использовалась в CallbackQueryHandler
-async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(text="Вы подтвердили ваш выбор!")
-
-# Обработчик для выбора исправлений
-async def handle_correction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(text="Вы выбрали исправление!")
-
-# Обработчики для разных частей формы
-# (оставляем без изменений)
-
-# Webhook endpoint для Flask
+# --- WEBHOOK ROUTE ---
 @app.route(f"/{os.getenv('BOT_TOKEN')}", methods=["POST"])
 def webhook():
     json_str = request.get_data(as_text=True)
     update = Update.de_json(json_str, app.bot)
-    app.process_update(update)
+    app.bot.loop.create_task(app.process_update(update))
     return 'OK', 200
 
-# Главный запуск
-async def main():
-    # Инициализация приложения
-    application = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
+# --- MAIN ---
+if __name__ == "__main__":
+    import dotenv
+    dotenv.load_dotenv()
 
-    # Устанавливаем webhook
-    await set_webhook(application)  # Добавляем await
+    TOKEN = os.getenv("BOT_TOKEN")
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-    # Конфигурация ConversationHandler
+    application = Application.builder().token(TOKEN).build()
+    app.bot = application.bot
+    app.process_update = application.process_update
+
+    # Conversation
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -159,7 +191,7 @@ async def main():
             ASK_SHIFT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_english_level)],
             ASK_ENGLISH_LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
             ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_branch)],
-            ASK_BRANCH: [CallbackQueryHandler(confirm)],  # Убедитесь, что confirm теперь определен
+            ASK_BRANCH: [CallbackQueryHandler(confirm)],
             CONFIRMATION: [CallbackQueryHandler(handle_confirmation)],
             CORRECTION_SELECT: [CallbackQueryHandler(handle_correction_choice)],
             CORRECTION_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_correction_input)],
@@ -168,9 +200,14 @@ async def main():
     )
 
     application.add_handler(conv_handler)
-    await application.run_polling()  # Запуск бота
 
-# Вызов функции main
-if __name__ == "__main__":
+    # Установка webhook
+    async def run():
+        await application.bot.set_webhook(f"{WEBHOOK_URL}/{TOKEN}")
+        print("Webhook установлен")
+
     import asyncio
-    asyncio.run(main())  # Запуск асинхронной функции main
+    asyncio.run(run())
+
+    # Запуск Flask
+    app.run(host="0.0.0.0", port=5000)
