@@ -45,7 +45,49 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ASK_PARENT_NAME
 
 # Все другие асинхронные функции, такие как ask_child_name, ask_child_age и т.д. остаются без изменений
+async def ask_child_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data[update.effective_user.id]["parent_name"] = update.message.text
+    await update.message.reply_text("Укажите имя и фамилию ребенка.")
+    return ASK_CHILD_NAME
 
+async def ask_child_age(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data[update.effective_user.id]["child_name"] = update.message.text
+    await update.message.reply_text("Укажите возраст ребенка")
+    return ASK_CHILD_AGE
+
+async def ask_child_class(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data[update.effective_user.id]["child_age"] = update.message.text
+    await update.message.reply_text("Скажите, пожалуйста, в каком классе Ваш ребенок?")
+    return ASK_CHILD_CLASS
+
+async def ask_shift(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data[update.effective_user.id]["child_class"] = update.message.text
+    await update.message.reply_text("В какую смену учится ребенок?")
+    return ASK_SHIFT
+
+async def ask_english_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data[update.effective_user.id]["shift"] = update.message.text
+    await update.message.reply_text("Как обстоят дела с английским языком? Изучали ли до этого дополнительно? Какая оценка в школе?")
+    return ASK_ENGLISH_LEVEL
+
+async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data[update.effective_user.id]["english_level"] = update.message.text
+    await update.message.reply_text("Укажите свой номер телефона, по которому мы вышлем подходящее расписание.")
+    return ASK_PHONE
+
+async def ask_branch(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data[update.effective_user.id]["phone"] = update.message.text
+    keyboard = [
+        [InlineKeyboardButton("Ул Авроры 17/2", callback_data="Ул Авроры 17/2")],
+        [InlineKeyboardButton("Ул Революционая,78", callback_data="Ул Революционая,78")],
+        [InlineKeyboardButton("Ул Баландина 2а", callback_data="Ул Баландина 2а")],
+        [InlineKeyboardButton("Онлайн-школа", callback_data="Онлайн-школа")],
+    ]
+    await update.message.reply_text(
+        "В каком филиале Вам удобнее заниматься?",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    return ASK_BRANCH
 # Вспомогательная функция для создания summary
 def summary_text(user_id):
     d = user_data[user_id]
