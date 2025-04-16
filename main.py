@@ -203,7 +203,10 @@ if __name__ == "__main__":
 
     # Установка webhook
     async def run():
-        await application.bot.set_webhook(f"{WEBHOOK_URL}/{TOKEN}")
+        WEBHOOK_BASE = "https://my-telegram-bot.onrender.com"
+        BOT_TOKEN = os.getenv("7910071726:AAFgHCgGpGA2j1mNZdL5N8xm9jhd4VC2gMU")
+
+        await application.bot.set_webhook(f"{WEBHOOK_BASE}/{BOT_TOKEN}")
         print("Webhook установлен")
 
     import asyncio
