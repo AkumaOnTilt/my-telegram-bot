@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 # Загрузка переменных из .env
 load_dotenv()
 
-TOKEN = os.getenv(7910071726:AAFgHCgGpGA2j1mNZdL5N8xm9jhd4VC2gMU)
-WEBHOOK_URL = os.getenv(https://my-telegram-bot-new1.onrender.com)  # Пример: https://your-bot.onrender.com
+TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Пример: https://your-bot.onrender.com
 
 # Состояния
 (
