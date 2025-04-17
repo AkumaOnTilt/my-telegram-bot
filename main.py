@@ -154,6 +154,8 @@ def summary_text(user_id):
 # --- Запуск приложения ---
 
 if __name__ == "__main__":
+    print("🔑 TOKEN:", TOKEN)
+    print("🌐 WEBHOOK_URL:", WEBHOOK_URL)
     application = Application.builder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
